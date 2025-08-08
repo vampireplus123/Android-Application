@@ -3,6 +3,7 @@ package com.universalyoga.admin;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -30,7 +31,17 @@ public class FirebaseUploader {
         }
 
         List<ClassModel> classes = db.getAllClasses();
+        uploadClassesWithInstances(classes);
+    }
 
+    private boolean isNetworkAvailable() {
+        ConnectivityManager cm = (ConnectivityManager)
+                context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        return activeNetwork != null && activeNetwork.isConnected();
+    }
+
+    private void uploadClassesWithInstances(List<ClassModel> classes) {
         for (ClassModel c : classes) {
             Map<String, Object> data = new HashMap<>();
             data.put("day", c.day);
@@ -43,17 +54,24 @@ public class FirebaseUploader {
 
             firestore.collection("yoga_classes")
                     .add(data)
-                    .addOnSuccessListener(docRef ->
-                            Toast.makeText(context, "Uploaded: " + c.day, Toast.LENGTH_SHORT).show())
-                    .addOnFailureListener(e ->
-                            Toast.makeText(context, "Failed: " + c.day, Toast.LENGTH_SHORT).show());
-        }
-    }
+                    .addOnSuccessListener(docRef -> {
+                        List<InstanceModel> instances = db.getInstancesForClass(c.id);
+                        for (InstanceModel ins : instances) {
+                            Map<String, Object> insData = new HashMap<>();
+                            insData.put("date", ins.date);
+                            insData.put("teacher", ins.teacher);
+                            insData.put("comment", ins.comment);
 
-    private boolean isNetworkAvailable() {
-        ConnectivityManager cm = (ConnectivityManager)
-                context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-        return activeNetwork != null && activeNetwork.isConnected();
+                            docRef.collection("instances").add(insData);
+                        }
+
+                        Toast.makeText(context, "Uploaded: " + c.day, Toast.LENGTH_SHORT).show();
+                    })
+                    .addOnFailureListener(e -> {
+                        String error = "Failed: " + c.day + " → " + e.getMessage();
+                        Toast.makeText(context, error, Toast.LENGTH_LONG).show();
+                        Log.e("FirebaseUploader", error, e);
+                    });
+        }
     }
 }
