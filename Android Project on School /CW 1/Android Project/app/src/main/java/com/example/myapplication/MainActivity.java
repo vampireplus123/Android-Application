@@ -12,7 +12,7 @@ public class MainActivity extends AppCompatActivity {
     Button convertButton;
     TextView resultText;
 
-    String[] units = {"Meter", "Kilometer", "Centimeter"};
+    String[] units = {"Meter", "Kilometer", "Centimeter", "Mile", "Foot"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,6 +29,10 @@ public class MainActivity extends AppCompatActivity {
         fromSpinner.setAdapter(adapter);
         toSpinner.setAdapter(adapter);
 
+        fromSpinner.setSelection(0); // Mặc định chọn Meter
+        toSpinner.setSelection(1);   // Mặc định chọn Kilometer
+
+        // set OnClickListener cho nút chuyển đổi
         convertButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -50,10 +54,10 @@ public class MainActivity extends AppCompatActivity {
         double result = convert(value, fromUnit, toUnit);
         resultText.setText(String.format("%.2f %s", result, toUnit));
     }
-
     private double convert(double value, String from, String to) {
         double meters;
 
+        // Chuyển từ đơn vị nguồn về mét
         switch (from) {
             case "Kilometer":
                 meters = value * 1000;
@@ -61,11 +65,18 @@ public class MainActivity extends AppCompatActivity {
             case "Centimeter":
                 meters = value / 100;
                 break;
-            default:
+            case "Mile":
+                meters = value * 1609.344;  // 1 mile = 1609.344 meters
+                break;
+            case "Foot":
+                meters = value * 0.3048;    // 1 foot = 0.3048 meters
+                break;
+            default:  // Meter
                 meters = value;
                 break;
         }
 
+        // Chuyển từ mét sang đơn vị đích
         double result;
         switch (to) {
             case "Kilometer":
@@ -74,12 +85,19 @@ public class MainActivity extends AppCompatActivity {
             case "Centimeter":
                 result = meters * 100;
                 break;
-            default:
+            case "Mile":
+                result = meters / 1609.344;
+                break;
+            case "Foot":
+                result = meters / 0.3048;
+                break;
+            default:  // Meter
                 result = meters;
                 break;
         }
 
         return result;
     }
+
 
 }
